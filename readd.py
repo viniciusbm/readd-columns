@@ -4,6 +4,8 @@ import argparse
 import sys
 from os import path
 from typing import Optional, Tuple, List, Dict
+from tqdm import tqdm
+
 
 from openpyxl import load_workbook
 from openpyxl.workbook import Workbook
@@ -84,7 +86,8 @@ def main(args: argparse.Namespace) -> None:
     # read key columns from source range and save correspondence
     key_to_row_idx: Dict[Tuple, int] = {}
     i0, j0 = source_range.min_row, source_range.min_col
-    for i in range(1, source_range.size['rows']):
+    for i in tqdm(range(1, source_range.size['rows']),
+                  desc='Indexing keys', position=1):
         k = tuple(source_ws.cell(i0 + i, j0 + j).value for j in key_in_source)
         if k in key_to_row_idx:
             raise Exception(
@@ -96,7 +99,8 @@ def main(args: argparse.Namespace) -> None:
     # and fill it in target range
     i0k, j0k = key_range.min_row, key_range.min_col
     i0t, j0t = target_range.min_row, target_range.min_col
-    for ik in range(1, key_range.size['rows']):
+    for ik in tqdm(range(1, key_range.size['rows']),
+                   desc='Filling cells', position=2):
         k = tuple(source_ws.cell(i0k + ik, j0k + jk).value
                   for jk in key_in_source)
         try:
@@ -112,7 +116,6 @@ def main(args: argparse.Namespace) -> None:
             for jt in range(len(target_col_names)):
                 target_ws.cell(i0t + it, j0t + jt, values[jt])
     spreadsheet.save(out_file)
-    print('Done')
 
 
 if __name__ == '__main__':
