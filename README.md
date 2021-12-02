@@ -12,8 +12,8 @@ If the columns of **key** are enough to uniquely identify the corresponding
 rows in **source**, then this script fills in **target** cells with
 the data obtained from **source**.
 
-There is probably a way to do the same thing on
-Excel, but learning it would probably have taken me longer
+There is probably [a way to do the same thing on Excel](https://support.microsoft.com/en-gb/office/look-up-values-with-vlookup-index-or-match-68297403-7c3c-4150-9e3c-4d348188976b),
+but learning it would probably have taken me longer
 than writing this short Python script.
 
 ### Requirements
