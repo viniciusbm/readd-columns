@@ -102,7 +102,7 @@ def main(args: argparse.Namespace) -> None:
     for ik in tqdm(range(1, key_range.size['rows']),
                    desc='Filling cells', position=2):
         k = tuple(source_ws.cell(i0k + ik, j0k + jk).value
-                  for jk in key_in_source)
+                  for jk in range(len(key_col_names)))
         try:
             i = key_to_row_idx[k]
             values = tuple(source_ws.cell(
