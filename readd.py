@@ -19,8 +19,8 @@ def excel_file(name: str, must_exist: Optional[bool] = None) -> str:
         raise ValueError('Not an Excel XLSX file: ' + name)
     if must_exist is not None and path.isfile(name) != must_exist:
         raise ValueError(
-            'File ' + ('does not exist' if must_exist else 'already exists')
-            + ': ' + name)
+            'File ' + ('does not exist' if must_exist else 'already exists') +
+            ': ' + name)
     return name
 
 
@@ -99,34 +99,39 @@ def main(args: argparse.Namespace) -> None:
     key_to_row_idx: Dict[Tuple, int] = {}
     i0, j0 = source_range.min_row, source_range.min_col
     for i, row in tqdm(enumerate(source_ws.iter_rows(
-        source_range.min_row, source_range.max_row,
+        source_range.min_row + 1, source_range.max_row,
         source_range.min_col, source_range.max_col,
         values_only=True)),
-            total=source_range.max_row - source_range.min_row + 1,
+            total=source_range.max_row - source_range.min_row,
             desc='Indexing keys', position=1
     ):
         key = tuple(row[j] for j in key_in_source)
         if key in key_to_row_idx:
             raise Exception(
-                f'Rows {i0 + i} and {i0 + key_to_row_idx[key]} '
-                + 'in source range have the same key')
-        key_to_row_idx[key] = i
+                f'Rows {i0 + key_to_row_idx[key]} and {i0 + i + 1} ' +
+                'in source range have the same key')
+        key_to_row_idx[key] = i + 1
 
     # read key columns from key range, look it up in source range
     # and fill it in target range
     i0k, j0k = key_range.min_row, key_range.min_col
     i0t, j0t = target_range.min_row, target_range.min_col
-    for ik in tqdm(range(1, key_range.size['rows']),
-                   desc='Filling cells', position=2):
-        k = tuple(source_ws.cell(i0k + ik, j0k + jk).value
-                  for jk in range(len(key_col_names)))
+    for ik, row in tqdm(enumerate(key_ws.iter_rows(
+            key_range.min_row + 1, key_range.max_row,
+            key_range.min_col, key_range.max_col,
+            values_only=True)),
+            total=key_range.max_row - key_range.min_row,
+            desc='Filling cells', position=2):
+        key = tuple(row[jk] for jk in range(len(key_col_names)))
         try:
-            i = key_to_row_idx[k]
-            values = tuple(source_ws.cell(
-                i0 + i, j0 + j).value for j in target_in_source)
+            i = key_to_row_idx[key]
+            source_row = next(source_ws.iter_rows(
+                i0 + i, i0 + i, source_range.min_col, source_range.max_col,
+                True))
+            values = tuple(source_row[j] for j in target_in_source)
         except KeyError:
-            print(f'WARNING: Row {i0k + ik} in key range ' +
-                  'has no correspondence in source range', file=sys.stderr)
+            print(f'WARNING: Row {i0k + ik} in key range '
+                  + 'has no correspondence in source range', file=sys.stderr)
             values = len(target_col_names) * (None, )
         else:
             it = ik
