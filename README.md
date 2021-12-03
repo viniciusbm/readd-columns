@@ -16,6 +16,9 @@ There is probably [a way to do the same thing on Excel](https://support.microsof
 but learning it would probably have taken me longer
 than writing this short Python script.
 
+If the file is too big, use the option `--only-new` so that the output
+spreadsheet contains **only** the new data.
+
 ### Requirements
 Python &geq; 3.8 with the following libraries:
 - [openpyxl](https://foss.heptapod.net/openpyxl/openpyxl) &geq; 3.0.9 (MIT Licence)
