@@ -97,7 +97,7 @@ def main(args: argparse.Namespace) -> None:
 
     # read key columns from source range and save correspondence
     key_to_row_idx: Dict[Tuple, int] = {}
-    i0, j0 = source_range.min_row, source_range.min_col
+    i0 = source_range.min_row
     for i, row in tqdm(enumerate(source_ws.iter_rows(
         source_range.min_row + 1, source_range.max_row,
         source_range.min_col, source_range.max_col,
@@ -107,14 +107,15 @@ def main(args: argparse.Namespace) -> None:
     ):
         key = tuple(row[j] for j in key_in_source)
         if key in key_to_row_idx:
-            raise Exception(
-                f'Rows {i0 + key_to_row_idx[key]} and {i0 + i + 1} ' +
-                'in source range have the same key')
-        key_to_row_idx[key] = i + 1
+            old = i0 + key_to_row_idx[key]
+            print(f'\n\nWARNING: Ignoring row {i0 + i + 1} in source range ' +
+                  f'because it is identical to row {old}.')
+        else:
+            key_to_row_idx[key] = i + 1
 
     # read key columns from key range, look it up in source range
     # and fill it in target range
-    i0k, j0k = key_range.min_row, key_range.min_col
+    i0k = key_range.min_row
     i0t, j0t = target_range.min_row, target_range.min_col
     for ik, row in tqdm(enumerate(key_ws.iter_rows(
             key_range.min_row + 1, key_range.max_row,
