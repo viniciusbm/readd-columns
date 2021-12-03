@@ -36,7 +36,7 @@ def header(ws: Worksheet, r: CellRange) -> List[str]:
 
 
 def main(args: argparse.Namespace) -> None:
-    # create copy of the file
+    # read file
     in_file = excel_file(args.input_file, must_exist=True)
     out_file = excel_file(
         args.output_file, must_exist=False if not args.overwrite else None)
