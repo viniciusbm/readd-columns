@@ -19,8 +19,8 @@ def excel_file(name: str, must_exist: Optional[bool] = None) -> str:
         raise ValueError('Not an Excel XLSX file: ' + name)
     if must_exist is not None and path.isfile(name) != must_exist:
         raise ValueError(
-            'File ' + ('does not exist' if must_exist else 'already exists') +
-            ': ' + name)
+            'File ' + ('does not exist' if must_exist else 'already exists')
+            + ': ' + name)
     return name
 
 
@@ -31,8 +31,8 @@ def ws_and_range(wb: Workbook, cell_range: str) -> \
 
 
 def header(ws: Worksheet, r: CellRange) -> List[str]:
-    return [ws.cell(r.min_row, j).value
-            for j in range(r.min_col, r.max_col + 1)]
+    it = next(ws.iter_rows(r.min_row, r.min_row, r.min_col, r.max_col, True))
+    return list(it)
 
 
 def main(args: argparse.Namespace) -> None:
@@ -40,7 +40,8 @@ def main(args: argparse.Namespace) -> None:
     in_file = excel_file(args.input_file, must_exist=True)
     out_file = excel_file(
         args.output_file, must_exist=False if not args.overwrite else None)
-    spreadsheet = load_workbook(in_file, read_only=not args.only_new)
+    print('Loading spreadsheet...')
+    spreadsheet = load_workbook(in_file, read_only=args.only_new)
     out_spreadsheet = spreadsheet
 
     # worksheets and ranges
@@ -97,14 +98,19 @@ def main(args: argparse.Namespace) -> None:
     # read key columns from source range and save correspondence
     key_to_row_idx: Dict[Tuple, int] = {}
     i0, j0 = source_range.min_row, source_range.min_col
-    for i in tqdm(range(1, source_range.size['rows']),
-                  desc='Indexing keys', position=1):
-        k = tuple(source_ws.cell(i0 + i, j0 + j).value for j in key_in_source)
-        if k in key_to_row_idx:
+    for i, row in tqdm(enumerate(source_ws.iter_rows(
+        source_range.min_row, source_range.max_row,
+        source_range.min_col, source_range.max_col,
+        values_only=True)),
+            total=source_range.max_row - source_range.min_row + 1,
+            desc='Indexing keys', position=1
+    ):
+        key = tuple(row[j] for j in key_in_source)
+        if key in key_to_row_idx:
             raise Exception(
-                f'Rows {i0 + i} and {i0 + key_to_row_idx[k]} ' +
-                'in source range have the same key')
-        key_to_row_idx[k] = i
+                f'Rows {i0 + i} and {i0 + key_to_row_idx[key]} '
+                + 'in source range have the same key')
+        key_to_row_idx[key] = i
 
     # read key columns from key range, look it up in source range
     # and fill it in target range
@@ -119,8 +125,8 @@ def main(args: argparse.Namespace) -> None:
             values = tuple(source_ws.cell(
                 i0 + i, j0 + j).value for j in target_in_source)
         except KeyError:
-            print(f'WARNING: Row {i0k + ik} in key range '
-                  + 'has no correspondence in source range', file=sys.stderr)
+            print(f'WARNING: Row {i0k + ik} in key range ' +
+                  'has no correspondence in source range', file=sys.stderr)
             values = len(target_col_names) * (None, )
         else:
             it = ik
