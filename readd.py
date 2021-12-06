@@ -19,8 +19,8 @@ def excel_file(name: str, must_exist: Optional[bool] = None) -> str:
         raise ValueError('Not an Excel XLSX file: ' + name)
     if must_exist is not None and path.isfile(name) != must_exist:
         raise ValueError(
-            'File ' + ('does not exist' if must_exist else 'already exists') +
-            ': ' + name)
+            'File ' + ('does not exist' if must_exist else 'already exists')
+            + ': ' + name)
     return name
 
 
@@ -104,14 +104,14 @@ def main(args: argparse.Namespace) -> None:
         source_range.min_col, source_range.max_col,
         values_only=True)),
             total=source_range.max_row - source_range.min_row,
-            desc='Indexing keys', position=0
+            desc='Indexing keys', unit='rows',
     ):
         key = tuple(row[j] for j in key_in_source)
         if key in key_to_row_idx:
-            old = i0 + key_to_row_idx[key]
-            tqdm.write(f'WARNING: Ignoring row {i0 + i + 1} in source range ' +
-                       'because their key columns are identical ' +
-                       f'to row {old}.')
+            old = i0 + key_to_row_idx[key] + 1
+            tqdm.write(f'WARNING: Ignoring row {i0 + i + 1} in source range '
+                       + 'because their key columns are identical '
+                       + f'to row {old}.')
         else:
             key_to_row_idx[key] = i
         value = tuple(row[j] for j in target_in_source)
@@ -126,13 +126,13 @@ def main(args: argparse.Namespace) -> None:
             key_range.min_col, key_range.max_col,
             values_only=True)),
             total=key_range.max_row - key_range.min_row,
-            desc='Filling cells', position=1):
+            desc='Filling cells', unit='rows',):
         key = tuple(row[jk] for jk in range(len(key_col_names)))
         try:
             values = all_values[key_to_row_idx[key]]
         except KeyError:
-            tqdm.write(f'WARNING: Row {i0k + ik} in key range '
-                       + 'has no correspondence in source range.')
+            tqdm.write(f'WARNING: Row {i0k + ik} in key range ' +
+                       'has no correspondence in source range.')
             values = len(target_col_names) * (None, )
         else:
             it = ik
