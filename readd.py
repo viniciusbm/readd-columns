@@ -40,7 +40,7 @@ def main(args: argparse.Namespace) -> None:
     in_file = excel_file(args.input_file, must_exist=True)
     out_file = excel_file(
         args.output_file, must_exist=False if not args.overwrite else None)
-    print('Loading spreadsheet...')
+    tqdm.write('Loading spreadsheet...')
     spreadsheet = load_workbook(in_file, read_only=args.only_new)
     out_spreadsheet = spreadsheet
 
@@ -98,20 +98,24 @@ def main(args: argparse.Namespace) -> None:
     # read key columns from source range and save correspondence
     key_to_row_idx: Dict[Tuple, int] = {}
     i0 = source_range.min_row
+    all_values: list = []
     for i, row in tqdm(enumerate(source_ws.iter_rows(
         source_range.min_row + 1, source_range.max_row,
         source_range.min_col, source_range.max_col,
         values_only=True)),
             total=source_range.max_row - source_range.min_row,
-            desc='Indexing keys', position=1
+            desc='Indexing keys', position=0
     ):
         key = tuple(row[j] for j in key_in_source)
         if key in key_to_row_idx:
             old = i0 + key_to_row_idx[key]
-            print(f'\n\nWARNING: Ignoring row {i0 + i + 1} in source range ' +
-                  f'because it is identical to row {old}.')
+            tqdm.write(f'WARNING: Ignoring row {i0 + i + 1} in source range ' +
+                       'because their key columns are identical ' +
+                       f'to row {old}.')
         else:
-            key_to_row_idx[key] = i + 1
+            key_to_row_idx[key] = i
+        value = tuple(row[j] for j in target_in_source)
+        all_values.append(value)
 
     # read key columns from key range, look it up in source range
     # and fill it in target range
@@ -122,17 +126,13 @@ def main(args: argparse.Namespace) -> None:
             key_range.min_col, key_range.max_col,
             values_only=True)),
             total=key_range.max_row - key_range.min_row,
-            desc='Filling cells', position=2):
+            desc='Filling cells', position=1):
         key = tuple(row[jk] for jk in range(len(key_col_names)))
         try:
-            i = key_to_row_idx[key]
-            source_row = next(source_ws.iter_rows(
-                i0 + i, i0 + i, source_range.min_col, source_range.max_col,
-                True))
-            values = tuple(source_row[j] for j in target_in_source)
+            values = all_values[key_to_row_idx[key]]
         except KeyError:
-            print(f'WARNING: Row {i0k + ik} in key range '
-                  + 'has no correspondence in source range', file=sys.stderr)
+            tqdm.write(f'WARNING: Row {i0k + ik} in key range '
+                       + 'has no correspondence in source range.')
             values = len(target_col_names) * (None, )
         else:
             it = ik
